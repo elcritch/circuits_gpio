@@ -1,11 +1,14 @@
 defmodule Circuits.GPIO.MixProject do
   use Mix.Project
 
+  {:ok, system_version} = Version.parse(System.version())
+  @elixir_version {system_version.major, system_version.minor, system_version.patch}
+
   def project do
     [
       app: :circuits_gpio,
       version: "0.4.1",
-      elixir: "~> 1.6",
+      elixir: "~> 1.4",
       description: description(),
       package: package(),
       source_url: "https://github.com/elixir-circuits/circuits_gpio",
@@ -19,7 +22,7 @@ defmodule Circuits.GPIO.MixProject do
       dialyzer: [
         flags: [:unmatched_returns, :error_handling, :race_conditions, :underspecs]
       ],
-      deps: deps()
+      deps: deps(@elixir_version)
     ]
   end
 
@@ -46,11 +49,19 @@ defmodule Circuits.GPIO.MixProject do
     }
   end
 
-  defp deps do
+  defp deps(elixir_version) when elixir_version >= {1, 7, 0} do
     [
-      {:elixir_make, "~> 0.5", runtime: false},
       {:ex_doc, "~> 0.11", only: :dev, runtime: false},
-      {:dialyxir, "1.0.0-rc.4", only: :dev, runtime: false}
+      {:dialyxir, "~> 1.0.0-rc.6", only: :dev, runtime: false}
+      | deps()
+    ]
+  end
+
+  defp deps(_), do: deps()
+
+  defp deps() do
+    [
+      {:elixir_make, "~> 0.5", runtime: false}
     ]
   end
 
@@ -60,13 +71,13 @@ defmodule Circuits.GPIO.MixProject do
   end
 
   defp format_c([]) do
-    astyle =
-      System.find_executable("astyle") ||
-        Mix.raise("""
-        Could not format C code since astyle is not available.
-        """)
+    case System.find_executable("astyle") do
+      nil ->
+        Mix.Shell.IO.info("Install astyle to format C code.")
 
-    System.cmd(astyle, ["-n", "src/*.c", "src/*.h"], into: IO.stream(:stdio, :line))
+      astyle ->
+        System.cmd(astyle, ["-n", "src/*.c"], into: IO.stream(:stdio, :line))
+    end
   end
 
   defp format_c(_args), do: true

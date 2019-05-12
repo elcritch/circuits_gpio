@@ -9,6 +9,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#if ERL_NIF_MAJOR_VERSION == 2 && ERL_NIF_MINOR_VERSION < 12
+#error Please install Erlang/OTP 20 or later
+#endif
+
 static void release_gpio_pin(struct gpio_priv *priv, struct gpio_pin *pin)
 {
     if (pin->fd >= 0) {
